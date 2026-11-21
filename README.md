@@ -4,6 +4,8 @@ Interactive 3D model of downtown Toronto in the browser: real OpenStreetMap buil
 
 Plain ES modules plus [Three.js](https://threejs.org) from a CDN. No build step.
 
+Created by Roy Dale Caliwag as a sandbox app built with Claude for Windows.
+
 ## Run locally
 
 ```powershell
