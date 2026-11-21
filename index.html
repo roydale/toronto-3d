@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Downtown Toronto 3D</title>
+  <meta name="description" content="An interactive 3D model of downtown Toronto built from OpenStreetMap data." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><path d='M16 1v30M13 31l3-20 3 20M11 13h10' stroke='%23334' stroke-width='2.4' fill='none' stroke-linecap='round'/></svg>" />
+  <link rel="stylesheet" href="styles.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.187.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <canvas id="scene"></canvas>
+
+  <div id="loading">
+    <div class="loading-card">
+      <h1>Downtown Toronto</h1>
+      <p id="loading-text">Loading…</p>
+      <div class="bar"><div id="loading-bar"></div></div>
+    </div>
+  </div>
+
+  <aside id="panel">
+    <header>
+      <div>
+        <h1>Downtown Toronto</h1>
+        <p class="sub">Interactive 3D city model</p>
+      </div>
+      <button id="panel-toggle" aria-label="Collapse panel">▾</button>
+    </header>
+
+    <div class="panel-body">
+      <section>
+        <h2>Explore</h2>
+        <div id="landmarks" class="chips"></div>
+      </section>
+
+      <section>
+        <h2>Time of day <span id="time-label" class="value"></span></h2>
+        <div class="time-row">
+          <button id="play" class="icon" aria-label="Play time">▶</button>
+          <input id="time" type="range" autocomplete="off" min="0" max="23.99" step="0.01" aria-label="Time of day" />
+        </div>
+        <div class="presets">
+          <button data-hour="6.2">Dawn</button>
+          <button data-hour="13.3">Noon</button>
+          <button data-hour="20.1">Sunset</button>
+          <button data-hour="22.5">Night</button>
+        </div>
+      </section>
+
+      <section>
+        <button id="walk" class="wide">Street-level walk</button>
+        <div class="toggles">
+          <label><input id="ao" type="checkbox" autocomplete="off" checked /> Ambient occlusion</label>
+          <label><input id="labels-toggle" type="checkbox" autocomplete="off" checked /> Labels</label>
+        </div>
+      </section>
+
+      <p id="orbit-help" class="help">Drag to rotate · Right-drag to pan · Scroll to zoom</p>
+    </div>
+  </aside>
+
+  <div id="walk-help" class="hud">
+    <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move · <kbd>Shift</kbd> run · mouse or drag to look · <kbd>Esc</kbd> exit
+  </div>
+
+  <footer class="attribution">
+    Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a>
+  </footer>
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

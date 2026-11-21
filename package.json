@@ -1,0 +1,12 @@
+{
+  "name": "toronto-3d",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "fetch-data": "node tools/fetch-osm.mjs",
+    "serve": "npx --yes serve -l 5173 ."
+  },
+  "devDependencies": {
+    "osmtogeojson": "^3.0.0-beta.5"
+  }
+}
