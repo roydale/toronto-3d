@@ -56,7 +56,10 @@ export function createUI({ scene, camera, controls, env, postfx }) {
   const timeLabel = $('#time-label');
   const playBtn = $('#play');
   let playing = false;
+  // The clock lives here, not in the slider: the slider rounds to its step and clamps to its max.
+  let hour = env.state.hour;
   const applyHour = (h) => {
+    hour = h;
     env.setHour(h);
     timeLabel.textContent = fmtHour(h);
   };
@@ -90,8 +93,7 @@ export function createUI({ scene, camera, controls, env, postfx }) {
   const tmp = new THREE.Vector3();
   function update(dt, size) {
     if (playing) {
-      let h = parseFloat(slider.value) + dt * 0.4; // ~1 game hour per 2.5 s
-      if (h >= 24) h -= 24;
+      const h = (hour + dt * 0.4) % 24; // ~1 game hour per 2.5 s
       slider.value = h;
       applyHour(h);
     }

@@ -132,6 +132,7 @@ export function createControls(camera, dom, bounds, collision, { onModeChange, s
   addEventListener('pointerup', () => { drag = null; });
   document.addEventListener('pointerlockerror', () => {});
   addEventListener('keyup', (e) => keys.delete(e.code));
+  addEventListener('blur', () => keys.clear()); // keyup never arrives if focus leaves mid-press
 
   const fwd = new THREE.Vector3(), right = new THREE.Vector3();
   function updateWalk(dt) {

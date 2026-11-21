@@ -38,7 +38,9 @@ export function createEnvironment(renderer, scene) {
     sp.push(r * c * Math.cos(u), r * v, r * c * Math.sin(u));
   }
   starGeo.setAttribute('position', new THREE.Float32BufferAttribute(sp, 3));
-  const starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 1.6, sizeAttenuation: false, transparent: true, opacity: 0, fog: false, depthWrite: false });
+  // Additive and not transparent: stays in the opaque list, so renderOrder draws it after the sky
+  // and before the ground layers, which then cover it. Brightness is set through the color.
+  const starMat = new THREE.PointsMaterial({ color: 0x000000, size: 1.6, sizeAttenuation: false, blending: THREE.AdditiveBlending, fog: false, depthWrite: false });
   const stars = new THREE.Points(starGeo, starMat);
   stars.frustumCulled = false;
   stars.renderOrder = -99;
@@ -74,7 +76,6 @@ export function createEnvironment(renderer, scene) {
   const probeCam = new THREE.PerspectiveCamera(6, 1, 0.1, 5000);
   const probePx = new Float32Array(8 * 8 * 4);
   const fogNight = new THREE.Color(0x0b1120);
-  let lastProbeHour = null;
   function sampleHorizon(out) {
     out.setRGB(0, 0, 0);
     const prev = renderer.getRenderTarget();
@@ -94,6 +95,22 @@ export function createEnvironment(renderer, scene) {
   const hemiSkyDay = new THREE.Color(0xdfe9f5), hemiSkyNight = new THREE.Color(0x24324f);
   const hemiGroundDay = new THREE.Color(0xb9ad98), hemiGroundNight = new THREE.Color(0x14161c);
   const tmp = new THREE.Color();
+
+  // The horizon color depends only on the hour, so sample it once per FOG_STEP at load and
+  // interpolate. Avoids GPU readback stalls while the clock plays.
+  const FOG_STEP = 0.2;
+  const fogLUT = [];
+  for (let h = 0; h < 24; h += FOG_STEP) {
+    envSky.material.uniforms.sunPosition.value.copy(sunDirection(h));
+    for (const k of ['turbidity', 'rayleigh', 'mieCoefficient', 'mieDirectionalG']) envSky.material.uniforms[k].value = su[k].value;
+    fogLUT.push(sampleHorizon(new THREE.Color()));
+  }
+  function horizonColor(hour, out) {
+    const x = (((hour % 24) + 24) % 24) / FOG_STEP;
+    const i = Math.floor(x) % fogLUT.length, j = (i + 1) % fogLUT.length;
+    return out.copy(fogLUT[i]).lerp(fogLUT[j], x - Math.floor(x));
+  }
+  const lightDir = new THREE.Vector3();
 
   const state = { hour: 17.5, dir: new THREE.Vector3(), night: 0, day: 1 };
 
@@ -118,13 +135,12 @@ export function createEnvironment(renderer, scene) {
     hemi.color.copy(hemiSkyNight).lerp(hemiSkyDay, day);
     hemi.groundColor.copy(hemiGroundNight).lerp(hemiGroundDay, day);
 
-    if (lastProbeHour === null || Math.abs(hour - lastProbeHour) > 0.05) {
-      lastProbeHour = hour;
-      sampleHorizon(tmp);
-      // Keep a little blue haze at night so distant ground does not vanish into pure black.
-      scene.fog.color.copy(tmp).lerp(fogNight, night * 0.6);
-    }
-    starMat.opacity = night * 0.9;
+    // Keep a little blue haze at night so distant ground does not vanish into pure black.
+    scene.fog.color.copy(horizonColor(hour, tmp)).lerp(fogNight, night * 0.6);
+    starMat.color.setScalar(night * 0.9);
+    stars.visible = night > 0.001;
+    // No sun, no shadow map work. The stale map is never visible because the light is off.
+    renderer.shadowMap.autoUpdate = sun.intensity > 0;
     renderer.toneMappingExposure = 0.6 + 0.25 * night;
     cityUniforms.uNight.value = night;
     scene.environmentIntensity = 0.08 + 0.1 * day;
@@ -152,7 +168,9 @@ export function createEnvironment(renderer, scene) {
     const texel = (2 * size) / sun.shadow.mapSize.x;
     const fx = Math.round(focus.x / texel) * texel, fz = Math.round(focus.z / texel) * texel;
     sun.target.position.set(fx, 0, fz);
-    const d = state.dir.y > 0.02 ? state.dir : new THREE.Vector3(0, 1, 0);
+    // Keep the sun's azimuth near the horizon; only lift its elevation to a small minimum.
+    const d = lightDir.copy(state.dir);
+    if (d.y < 0.03) { d.y = 0.03; d.normalize(); }
     sun.position.set(fx + d.x * 3000, d.y * 3000, fz + d.z * 3000);
     sun.target.updateMatrixWorld();
   }
